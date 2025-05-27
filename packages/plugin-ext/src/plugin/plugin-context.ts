@@ -781,8 +781,15 @@ export function createAPIFactory(
             onDidChangeConfiguration(listener, thisArgs?, disposables?): theia.Disposable {
                 return preferenceRegistryExt.onDidChangeConfiguration(listener, thisArgs, disposables);
             },
-            async openTextDocument(uriOrFileNameOrOptions?: theia.Uri | string | { language?: string; content?: string; }): Promise<theia.TextDocument | undefined> {
-                const options = uriOrFileNameOrOptions as { language?: string; content?: string; };
+            decode(content: Uint8Array, options?: { uri?: theia.Uri; encoding?: string }) {
+                return workspaceExt.decode(content, options);
+            },
+            encode(content: string, options?: { uri?: theia.Uri; encoding?: string }) {
+                return workspaceExt.encode(content, options);
+            }, async openTextDocument(
+                uriOrFileNameOrOptions?: theia.Uri | string | { language?: string; content?: string; encoding?: string }
+            ): Promise<theia.TextDocument | undefined> {
+                const options = uriOrFileNameOrOptions as { language?: string; content?: string; encoding?: string };
 
                 let uri: URI;
                 if (typeof uriOrFileNameOrOptions === 'string') {

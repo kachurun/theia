@@ -272,7 +272,7 @@ export class DocumentsExtImpl implements DocumentsExt {
         return this.editorsAndDocuments.getDocument(uri.toString());
     }
 
-    async createDocumentData(options?: { language?: string; content?: string }): Promise<URI> {
+    async createDocumentData(options?: { language?: string; content?: string, encoding?: string }): Promise<URI> {
         return this.proxy.$tryCreateDocument(options).then(data => URI.revive(data));
     }
 

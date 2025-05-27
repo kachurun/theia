@@ -768,6 +768,9 @@ export interface WorkspaceMain {
     $registerCanonicalUriProvider(scheme: string): Promise<void | undefined>;
     $unregisterCanonicalUriProvider(scheme: string): void;
     $getCanonicalUri(uri: string, targetScheme: string, token: theia.CancellationToken): Promise<string | undefined>;
+    $resolveDecoding(resource: UriComponents | undefined, options?: { encoding?: string }): Promise<{ preferredEncoding: string; guessEncoding: boolean; }>;
+    $resolveEncoding(resource: UriComponents | undefined, options?: { encoding?: string }): Promise<{ encoding: string; addBOM: boolean }>;
+    $validateDetectedEncoding(uri: UriComponents | undefined, detectedEncoding: string | undefined, opts: { encoding: string; } | undefined): Promise<string>;
 }
 
 export interface WorkspaceExt {
@@ -1366,6 +1369,7 @@ export interface ModelAddedData {
     EOL: string;
     modeId: string;
     isDirty: boolean;
+    encoding: string;
 }
 
 export interface TextEditorAddData {
@@ -1419,7 +1423,7 @@ export interface DocumentsExt {
 }
 
 export interface DocumentsMain {
-    $tryCreateDocument(options?: { language?: string; content?: string; }): Promise<UriComponents>;
+    $tryCreateDocument(options?: { language?: string; content?: string; encoding?: string }): Promise<UriComponents>;
     $tryShowDocument(uri: UriComponents, options?: TextDocumentShowOptions): Promise<void>;
     $tryOpenDocument(uri: UriComponents): Promise<boolean>;
     $trySaveDocument(uri: UriComponents): Promise<boolean>;

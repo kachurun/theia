@@ -183,10 +183,11 @@ export class DocumentsMainImpl implements DocumentsMain, Disposable {
         }
     }
 
-    async $tryCreateDocument(options?: { language?: string; content?: string; }): Promise<UriComponents> {
+    async $tryCreateDocument(options?: { language?: string; content?: string; encoding?: string }): Promise<UriComponents> {
         const language = options?.language && this.languageService.getExtension(options.language);
         const content = options?.content;
-        const resource = await this.untitledResourceResolver.createUntitledResource(content, language);
+        const encoding = options?.encoding;
+        const resource = await this.untitledResourceResolver.createUntitledResource(content, language, undefined, encoding);
         return monaco.Uri.parse(resource.uri.toString());
     }
 
