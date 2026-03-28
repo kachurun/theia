@@ -28,7 +28,8 @@ import { AbstractPluginManagerExt, ConfigStorage } from '../../common/plugin-api
 import {
     Disposable, DisposableCollection, Emitter,
     ILogger, ContributionProvider,
-    RpcProxy
+    RpcProxy,
+    environment
 } from '@theia/core';
 import { MainPluginApiProvider } from '../../common/plugin-ext-api-contribution';
 import { PluginPathsService } from '../../main/common/plugin-paths-protocol';
@@ -373,10 +374,10 @@ export abstract class AbstractHostedPluginSupport<PM extends AbstractPluginManag
         };
 
         for (const [host, hostContributions] of contributionsByHost) {
-            if (!this.shouldStartPluginsForHost(host)) {
+            if (host === 'frontend' && environment.electron.is()) {
                 continue;
             }
-
+                    
             const manager = await this.obtainManager(host, hostContributions, toDisconnect);
             if (!manager) {
                 continue;
@@ -421,11 +422,6 @@ export abstract class AbstractHostedPluginSupport<PM extends AbstractPluginManag
         } else {
             startPluginsMeasurement.stop();
         }
-    }
-
-    /** Override to skip starting plugins for a specific host */
-    protected shouldStartPluginsForHost(_host: PluginHost): boolean {
-        return true;
     }
 
     protected abstract obtainManager(host: string, hostContributions: PluginContributions[],

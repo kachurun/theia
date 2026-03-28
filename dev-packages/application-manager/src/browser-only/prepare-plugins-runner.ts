@@ -78,32 +78,66 @@ function resolvePluginRoot(dir: string): string | undefined {
     return undefined;
 }
 
-function hasFrontendEntry(pkg: PluginPackage): boolean {
-    return !!(pkg.theiaPlugin?.frontend ?? pkg.browser);
-}
-
 function hasContributes(pkg: PluginPackage): boolean {
     const c = pkg.contributes;
     return !!(c && typeof c === 'object' && Object.keys(c).length > 0);
 }
 
-function ensurePluginPackageForScanner(pkg: PluginPackage): PluginPackage {
+function isVsCodeNodeOnlyExtension(pkg: PluginPackage): boolean {
+    return !!pkg.main && !pkg.browser && !pkg.theiaPlugin?.frontend;
+}
+
+/**
+ * Whether to copy this extension into the browser-only static plugins folder and list.json.
+ * Uses the raw manifest (before {@link ensurePluginPackageForBrowserOnlyScanner}).
+ */
+function shouldIncludePluginInBrowserOnlyBuild(manifest: PluginPackage): boolean {
+    if (!manifest?.name) { return false; }
+    
+    const hasWorker = !!(manifest.theiaPlugin?.frontend?.trim?.() ?? manifest.browser);
+    if (!hasWorker && !hasContributes(manifest)) {
+        return false;
+    }
+    if (isVsCodeNodeOnlyExtension(manifest)) {
+        return false;
+    }
+    if (!hasWorker) {
+        const tp = manifest.theiaPlugin;
+        if (tp?.backend || tp?.headless) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Normalize package.json for the Theia scanner in browser-only builds.
+ * - If a browser worker exists (`theiaPlugin.frontend` or `browser`), drop `theiaPlugin.backend` / `headless`
+ *   so hybrid extensions do not advertise Node/headless activation (scanner + written package.json match).
+ * - Node-only VS Code extensions are excluded by {@link shouldIncludePluginInBrowserOnlyBuild} before this runs.
+ */
+function ensurePluginPackageForBrowserOnlyScanner(pkg: PluginPackage): PluginPackage {
     if (pkg.browser && pkg.main) {
         delete pkg.main;
     }
 
     if (!pkg.theiaPlugin) {
-        if (pkg.browser ?? pkg.main) {
-            pkg.theiaPlugin = { frontend: (pkg.browser ?? pkg.main) as string };
-        } else {
-            pkg.theiaPlugin = { frontend: '', backend: '' };
+        if (pkg.browser) {
+            pkg.theiaPlugin = { frontend: pkg.browser as string };
         }
     }
+
     if (pkg.engines) {
         pkg.engines.theiaPlugin = pkg.engines.theiaPlugin ?? pkg.engines.vscode ?? '*';
     } else {
         pkg.engines = { theiaPlugin: '*' };
     }
+
+    if (pkg.theiaPlugin) {
+        delete pkg.theiaPlugin.backend;
+        delete pkg.theiaPlugin.headless;
+    }
+
     return pkg;
 }
 
@@ -197,10 +231,13 @@ export class PrepareBrowserOnlyPluginsRunner {
         } catch {
             return undefined;
         }
-        if (!manifest?.name) { return undefined; }
-        const hasFrontend = hasFrontendEntry(manifest);
-        const hasContrib = hasContributes(manifest);
-        if (!hasFrontend && !hasContrib) { return undefined; }
+        if (!shouldIncludePluginInBrowserOnlyBuild(manifest)) {
+            return undefined;
+        }
+
+        const plugin = ensurePluginPackageForBrowserOnlyScanner(manifest);
+        const scanner = this.scannerResolver.getScanner(plugin);
+        const model = scanner.getModel(plugin);
 
         const pluginId = getPluginId(manifest);
         const dst = path.join(hostedPluginDir, pluginId);
@@ -212,14 +249,9 @@ export class PrepareBrowserOnlyPluginsRunner {
             filter: (src: string) => !/[/\\](\.git|node_modules)([/\\]|$)/.test(src)
         });
 
-        // Replace package.json with localized version
+        // package.json was already sanitized before getModel; persist the same object
         await fs.writeJson(path.join(dst, 'package.json'), manifest, { spaces: 2 });
 
-        // Prepare plugin package
-        const plugin = ensurePluginPackageForScanner(manifest);
-
-        const scanner = this.scannerResolver.getScanner(plugin);
-        const model = scanner.getModel(plugin);
         const lifecycle = scanner.getLifecycle(plugin);
         const contributes = await scanner.getContribution(plugin);
 
