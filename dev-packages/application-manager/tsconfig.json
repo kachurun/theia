@@ -13,10 +13,7 @@
       "path": "../../packages/core"
     },
     {
-      "path": "../../packages/plugin-ext"
-    },
-    {
-      "path": "../../packages/plugin-ext-vscode"
+      "path": "../../packages/task"
     },
     {
       "path": "../ffmpeg"
