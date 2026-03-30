@@ -14,11 +14,11 @@
 // SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0
 // *****************************************************************************
 
-import * as fs from '@theia/core/shared/fs-extra';
+import * as fs from 'fs-extra';
 import * as path from 'path';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import type { RawSourceMap } from 'source-map';
-import { ApplicationPackage } from '@theia/core/shared/@theia/application-package';
+import { ApplicationPackage } from '@theia/application-package';
 
 const modulePackages: { dir: string, name?: string }[] = [];
 for (const extensionPackage of new ApplicationPackage({ projectPath: process.cwd() }).extensionPackages) {
@@ -48,7 +48,7 @@ function exposeModule(modulePackage: { dir: string, name?: string }, resourcePat
 
 /**
  * Expose bundled modules on window.theia.moduleName namespace, e.g.
- * window['theia']['@theia/core/lib/common/uri'].
+ * window['theia']['@theia/some-package/lib/...'].
  * Such syntax can be used by external code, for instance, for testing.
  */
 // TODO: webpack@5.36.2 is missing a `LoaderContext` interface so we'll use any in the meantime

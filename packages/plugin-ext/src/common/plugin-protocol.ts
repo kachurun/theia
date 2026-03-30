@@ -584,6 +584,11 @@ export interface PluginModel {
     };
     entryPoint: PluginEntryPoint;
     packageUri: string;
+    /**
+     * @deprecated since 1.1.0 - because it lead to problems with getting a relative path
+     * needed by Icon Themes to correctly load Fonts, use packageUri instead.
+     */
+    packagePath: string;
     iconUrl?: string;
     l10n?: string;
     readmeUrl?: string;

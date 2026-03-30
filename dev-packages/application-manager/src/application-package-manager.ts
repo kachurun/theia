@@ -15,16 +15,15 @@
 // *****************************************************************************
 
 import * as path from 'path';
-import * as fs from '@theia/core/shared/fs-extra';
+import * as fs from 'fs-extra';
 import * as cp from 'child_process';
 import * as semver from 'semver';
-import { ApplicationPackage, ApplicationPackageOptions } from '@theia/core/shared/@theia/application-package';
-import { createBuildContainer } from './browser-only/build-container';
-import { PrepareBrowserOnlyPluginsRunner } from './browser-only/prepare-plugins-runner';
+import * as yargs from 'yargs';
+import { ApplicationPackage, ApplicationPackageOptions } from '@theia/application-package';
+import { prepareBrowserOnlyPlugins } from './browser-only/prepare-browser-only-plugins';
 import { WebpackGenerator, FrontendGenerator, BackendGenerator } from './generator';
 import { ApplicationProcess } from './application-process';
 import { GeneratorOptions } from './generator/abstract-generator';
-import yargs = require('@theia/core/shared/yargs');
 
 // Declare missing exports from `@types/semver@7`
 declare module 'semver' {
@@ -119,7 +118,7 @@ export class ApplicationPackageManager {
 
     /**
      * For browser-only: write lib/frontend/extensions.json (Theia extension packages) so the About dialog
-     * shows the same list as in the backend build (@theia/ai-chat, @theia/core, etc.), not VSIX plugins.
+     * shows the same list as in the backend Theia extension build, not VSIX plugins.
      */
     protected async writeBrowserOnlyExtensionsList(): Promise<void> {
         const extensions = this.pck.extensionPackages.map(({ name, version }) => ({ name, version }));
@@ -130,9 +129,7 @@ export class ApplicationPackageManager {
      * For browser-only: Copy plugins to the static folder
      */
     protected async prepareBrowserOnlyPlugins(): Promise<void> {
-        const container = createBuildContainer();
-        const runner = container.get(PrepareBrowserOnlyPluginsRunner);
-        await runner.run(this.pck);
+        await prepareBrowserOnlyPlugins(this.pck);
     }
 
     async build(args: string[] = [], options: GeneratorOptions = {}): Promise<void> {
